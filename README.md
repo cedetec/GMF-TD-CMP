@@ -11,7 +11,7 @@
   <h3 align="center"> Software: GMF-TD-CMP </h3>
   <h3 align="center"> A ROBUST MODELING FRAMEWORK TO INVESTIGATE TRANSMISSIBLE DISEASES: A COMPARATIVE STUDY  </h3>
   <p align="center">
-    Team: Oscar Rojas (U. Santiago de Chile), Patricio Cumsille (U. Bío-Bío), and Carlos Conca (U. de Chile)
+    Team: Patricio Cumsille (U. Bío-Bío), Oscar Rojas (U. Santiago de Chile) and Carlos Conca (U. de Chile)
     <br />
     <a href="https://github.com/neurovisionhub/GMF-TD"><strong>Explore the docs »</strong></a>
     <br />
@@ -110,11 +110,11 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 O. Rojas - oscar.rojas.d@usach.cl
 
-Project Link:([https://github.com/neurovisionhub/GMF-TD](https://github.com/neurovisionhub/GMF-TD))
+Project Link:([https://github.com/cedetec/GMF-TD-CMP](https://github.com/cedetec/GMF-TD-CMP))
 
 ## History
 
-This work is an improved extension of the source code presented in [GSM-covid19CL](https://github.com/neurovisionhub/GSM-covid19CL) of publication "A general modeling framework for quantitative tracking, accurate prediction of ICU, and assessing vaccination for COVID-19 in Chile" <a href="https://doi.org/10.3389/fpubh.2023.1111641">https://doi.org/10.3389/fpubh.2023.1111641</a>.
+This work is an improved extension of the source code presented in [GSM-covid19CL](https://github.com/cedetec/GMF-TD-CMP) of publication "A ROBUST MODELING FRAMEWORK TO INVESTIGATE TRANSMISSIBLE DISEASES: A COMPARATIVE STUDY" <a href="https://doi.org/">https://doi.org/</a>.
 
 ## Author contributions
 <!-- AUTHOR CONTRIBUTIONS -->
