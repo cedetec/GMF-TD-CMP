@@ -1,0 +1,240 @@
+set(groot, 'defaultAxesTickLabelInterpreter', 'latex');
+set(groot, 'defaultLegendInterpreter', 'latex');
+set(groot, 'defaultTextInterpreter', 'latex');
+
+tau1=p(4);
+tau2=p(5);
+tau3=p(6);
+tau4=p(7);
+tau5=p(8);
+tau6=p(9);
+all_taus = [tau1,tau2,tau3,tau4,tau5,tau6]';
+nTau=length(all_taus);
+tg=(100:max(size(Data)))';
+%% Compute R effective
+if opcionModel==1
+    [R,Rf,Rd] = Re1(p,N,x0,tg,nTau,nGammas,xd,Data,acumulada,ventana_general);
+elseif opcionModel==2
+    [R,Rf,Rd] = Re1_sin_vac(p,N,x0,tg,nTau,nGammas,xd,Data,acumulada,ventana_general);
+else
+    [R,Rf,Rd] = Re1_all_models(p,N,x0,tg,xd,Data,acumulada,ventana_general);
+end
+%% Plots
+%figure
+if opcionModel == 1
+    if tau5<round(tau5)
+        I5=find(tg>tau5+1);
+    else
+        I5=find(tg>tau5);
+    end
+    tg=tg(I5);
+    Tr=tg+I00-1;
+elseif opcionModel == 2
+     if tau2<round(tau2)
+        I2=find(tg>tau2+1);
+    else
+        I2=find(tg>tau2);
+    end
+    tg=tg(I2);
+    Tr=tg+I00-1;
+else
+    Tr=tg+I00-1;
+end
+
+
+% 1. Definir un tamaño físico controlado para la ventana de la figura
+% Esto evita que al exportar a EPS el texto se desproporcione.
+fig = figure('Position', [100, 100, 600, 450]); 
+
+% 2. Crear tu gráfico usando 'tiledlayout' (herramienta nativa moderna)
+% Aquí es donde se aplica el "TileSpacing" de forma correcta.
+t = tiledlayout(1, 1, 'TileSpacing', 'compact', 'Padding', 'compact');
+ax = nexttile;
+
+% --- PONE TU CÓDIGO DE PLOT AQUÍ ---
+h1= plot(ax,Tr,R,'r','LineWidth',0.5);
+hold on;
+h2=plot(ax,Tr,Rf,'--k','LineWidth',1.5);
+grid on;
+
+if abs( max(Rf)-min(Rd) ) >= 1 || abs( max(Rd)-min(Rf) ) >= 1 
+    minplot=min( min( min(R),min(Rf) ) );
+    maxplot=max( max( max(R),max(Rf) ) );
+else
+     minplot=min( min( min(R),min(Rf) ), min(Rd) );
+    maxplot=max( max( max(R),max(Rf) ), max(Rd) );
+end
+if minplot>0
+    ylim([0.99*minplot 1.01*maxplot])
+else
+    ylim([1.5*minplot 1.01*maxplot])
+end
+xlabel('Time (days)','FontSize',12)
+ylabel('$R_e(t)$','FontSize',12,'Interpreter','latex')
+
+if min(Rf) < 1
+    if abs( max(Rf)-min(Rd) ) >= 1 || abs( max(Rd)-min(Rf) ) >= 1
+        if opcionModel  == 1
+            h3=line([Tr(1)-round(tau5),Tr(end)],[1,1],'Color','#006400','LineStyle','-.','LineWidth',1.0);
+            xlim([Tr(1)-round(tau5),Tr(end)]);
+        elseif opcionModel  == 2
+            h3=line([Tr(1)-round(tau2),Tr(end)],[1,1],'Color','#006400','LineStyle','-.','LineWidth',1.0);
+            xlim([Tr(1)-round(tau2),Tr(end)])
+        else
+            h3=line([Tr(1)-1,Tr(end)+1],[1,1],'Color','#006400','LineStyle','-.','LineWidth',1.0);
+            xlim([Tr(1)-1,Tr(end)+1])
+        end
+    else
+        if opcionModel  == 1
+            h3=line([Tr(1)-round(tau5),Tr(end)],[1,1],'Color','#006400','LineStyle','-.','LineWidth',1.0);
+            xlim([Tr(1)-round(tau5),Tr(end)])
+        elseif opcionModel  == 2
+            h3=line([Tr(1)-round(tau2),Tr(end)],[1,1],'Color','#006400','LineStyle','-.','LineWidth',1.0);
+            xlim([Tr(1)-round(tau2),Tr(end)])
+        else
+            h3=line([Tr(1)-1,Tr(end)+1],[1,1],'Color','#006400','LineStyle','-.','LineWidth',1.0);
+            xlim([Tr(1)-1,Tr(end)+1])
+        end
+    end
+end
+%% For plotting Rd (computed through the dataset)
+%tg=(1:max(size(Data)));
+if opcionModel  == 1
+    if tau5<round(tau5)
+        I5=find(tg>tau5+1);
+    else
+        I5=find(tg>tau5);
+    end
+    tg=tg(I5);
+elseif  opcionModel  == 2
+    if tau2<round(tau2)
+        I2=find(tg>tau2+1);
+    else
+        I2=find(tg>tau2);
+    end
+    tg=tg(I2);
+else
+    tg=tg(2:end-1);
+end
+if length(tg)>300
+    I=find( mod(tg,4)==0 );
+else
+    I = find(mod(tg, 2) == 0);
+end
+texp=tg(I);
+if texp(1)>tg(1)
+    texp=[tg(1); texp];
+    I=[1; I];
+end
+if texp(end)<tg(end)
+    texp=[texp; tg(end)];
+    I=[I; length(tg)];
+end
+texp=texp+I00-1;
+
+%% Plot of Rd on the right vertical axis
+if abs( max(Rf)-min(Rd) ) >= 1 || abs( max(Rd)-min(Rf) ) >= 1 
+    yyaxis right;
+    h4=plot(texp,Rd(I),'sb','MarkerEdgeColor','b',...
+        'MarkerFaceColor',[0 0.4470 0.7410],'MarkerSize',3,'DisplayName','Observed $R_e(t)$');
+    legend([h1 h2 h3], 'Interpreter','latex','FontSize',12);
+    %set(lgd,'Interpreter','latex','FontSize',12);
+    if min(Rd)<0
+        ylim([1.5*min(Rd) 1.05*max(Rd)])
+    else
+        ylim([0.95*min(Rd) 1.01*max(Rd)])
+    end
+    ylabel('Observed $R_e(t)$','FontSize',16,'Interpreter','latex')
+    hold on
+    if min(Rd) < 1
+        if opcionModel  == 1
+            line([Tr(1)-round(tau5),Tr(end)],[1,1],'Color','magenta','LineStyle',':','LineWidth',1.5,'DisplayName','$R_e(t)=1$');
+        elseif opcionModel  == 2
+            line([Tr(1)-round(tau2),Tr(end)],[1,1],'Color','magenta','LineStyle',':','LineWidth',1.5,'DisplayName','$R_e(t)=1$');
+        else
+            line([Tr(1)-1,Tr(end)+1],[1,1],'Color','magenta','LineStyle',':','LineWidth',1.5,'DisplayName','$R_e(t)=1$');
+        end
+    end
+else
+%% Plot of Rd in the same subplot only if scales allow it
+    hold on
+    plot(ax, texp,Rd(I),'sb','MarkerEdgeColor','b',...
+        'MarkerFaceColor',[0 0.4470 0.7410],'MarkerSize',3,'DisplayName','Observed $R_e(t)=1$');
+end
+Tr=tg+I00-1;
+dticks = ceil((Tr(end)-Tr(1)-round(tau5))/num_ticks);
+if opcionModel  ==1
+    ticks = (Tr(1)-round(tau5)):dticks:Tr(end); % Ticks adaptativos
+elseif  opcionModel  == 2
+    ticks = (Tr(1)-round(tau2)):dticks:Tr(end);
+else
+    ticks = (Tr(1)-1):dticks:(Tr(end)+1); % Ticks adaptativos
+end
+%ticks = ceil(ticks);
+rticks=mod(ticks(2:end),10);
+i1=find(rticks==1);
+ticks(i1+1)=ticks(i1+1)-1;
+im1=find(rticks>1);
+ticks(im1+1)=ticks(im1+1)+10-rticks(im1);
+
+if ticks(end) < I10
+    ticks(end)=I10;
+end
+
+if I00 < ticks(1)
+    ticks(1)=I00;
+end
+
+xticks(ticks);
+ax=gca;
+ax.FontSize=16;
+xticklabels(arrayfun(@(v) sprintf('%.f', v), ticks, 'UniformOutput', false));
+lgd = legend([h1 h2 h4 h3], {'Modeled','Fitted','Observed','$R_e(t)=1$ (left)'}, 'Interpreter','latex','Location','northeast');
+lgd.AutoUpdate = 'off';
+% lgd.AutoUpdate = 'off';
+
+% if min(Rf) < 1
+%     lgd=legend(ax,'$R_e(t)=1$ for left axis');
+% end
+% if min(Rd) < 1
+%     lgd=legend(ay,'$R_e(t)=1$ for right axis');
+% end
+%axis square
+%fig = gcf;
+%fig.Layout.TileSpacing = 'compact';
+% set(gca, 'FontSize', 14);
+% tightjpg = get(gca, 'TightInset');
+% exportgraphics(gca, 'Fig1a.eps', 'ContentType', 'vector');
+
+
+
+% --- PONE TU CÓDIGO DE PLOT AQUÍ ---
+% x = 0:0.1:10;
+% plot(ax, x, sin(x), 'LineWidth', 2);
+% xlabel(ax, 'Eje X (Labels Grandes)');
+% ylabel(ax, 'Eje Y (Labels Grandes)');
+% ------------------------------------
+
+% 3. Configurar la fuente GLOBAL de los ejes (Labels y números crecerán juntos)
+set(ax, 'FontSize', 12);
+
+% 4. Insertar la leyenda de forma externa pero vinculada al Layout
+%lgd = legend(ax, 'Seno de X', 'Location', 'eastoutside');
+%set(lgd,'Location','northwest','Interpreter','latex','FontSize',12)
+%lgd.String = strcat(lgd.String, '    '); 
+%lgd.String = strcat(lgd.String, '\;\;\;'); 
+drawnow;
+
+% 5. Truco para estirar la caja vectorialmente si el texto sigue al límite
+% (Multiplica el ancho actual por un 10% adicional de seguridad)
+pos = lgd.Position;
+pos(3) = pos(3) * 1.05; 
+lgd.Position = pos;
+
+% 6. Forzar el renderizado vectorial limpio (Painters)
+fig.Renderer = 'opengl';
+findobj(gcf,'Type','line')    % lista handles de líneas
+% 6. Exportar a formato EPS de forma ajustada y recortada
+exportgraphics(fig, 'Fig1e.pdf', 'ContentType', 'vector','BackgroundColor','none');
+hold off
+shg

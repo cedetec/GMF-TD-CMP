@@ -1,0 +1,232 @@
+%% Compute curves for GSIRTD and GSIR models (opcionModel = 2 or 3)
+tau1=p(4);
+tau2=p(5);
+tau3=p(6);
+tau4=p(7);
+tau5=p(8);
+tau6=p(9);
+all_taus = [tau1,tau2,tau3,tau4,tau5,tau6]';
+%load("solucionbuena_calibracion.mat") % on case of charge directy initial
+% data, for example to manual "p0"
+
+nTau=length(all_taus);
+tg=(1:max(size(Data)))';
+
+%%  config: solver EDP with time delays
+v_ini = [N-xd(diaInicio,1)-xd(diaInicio,2);Data(1,1);Data(1,2)];
+
+vectorInicial = v_ini;
+
+if opcionModel==2
+    options = ddeset('RelTol',1e-4,'AbsTol',1e-8, 'InitialY',vectorInicial,'InitialStep',10);
+    sol = dde23(@sir_ret_fun_sin_vac, all_taus, @sir_ret_hist_sin_vac, [tg(1), tg(end)], options, p, N, x0); % ver. 30.07.2026
+else
+    options = odeset('RelTol',1e-4,'AbsTol',1e-8,'InitialStep',10);
+    sol = ode15s(@(t,y)odefun(t,y,p,N,x0),[tg(1),tg(end)],vectorInicial,options);
+end
+
+tiempo_compute_dde23_0 = tic
+
+y = deval(sol,tg);
+
+%tiempo_compute_dde23 = toc(tiempo_compute_dde23_0)
+
+
+%% solver solutions
+Inf = y(2,:); %LINEA ROJA - Infectados calculados por el modelo base...
+f_tmp = 0;
+InfDa=Data(:,1);
+
+if use_synt ~= 3
+    %% Original data
+    InfDaor=Dataor(:,1);
+end
+
+Inf_t = Inf;
+InfDa_t=InfDa;
+
+fr=0;
+Inf_tmp=0;
+test_data_covid = Data;
+test_data_covid_estimate = y'; 
+
+% For adjustments on accumulated curves
+if acumulada == 1 || acumulada == 0
+    Inf_tmp = y(2,:);
+    Idays = diferenciasDiarias(Inf_tmp);
+    Idays_target = diferenciasDiarias(test_data_covid(:,1)');
+    fr=sigmoide_all(p,Inf_tmp,nTau); 
+    InfR = fr.*Idays;
+    f_tmp = cumsum(InfR);
+else % For adjustments on daily curves
+    Idays = y(2,:);
+    fr=sigmoide_all(p,Idays,nTau);
+end
+
+%% In case of evaluating fit of the model
+% ss = ( test_data_covid_estimate(:,1)-test_data_covid(:,3) )./(test_data_covid_estimate(:,1));
+% ii = ( test_data_covid_estimate(:,2)-test_data_covid(:,1) )./(test_data_covid_estimate(:,2));
+% rr = ( test_data_covid_estimate(:,3)-test_data_covid(:,2) )./(test_data_covid(:,2));
+
+%% In case of evaluating fit to the data (default on evaluation results)
+ss = ( test_data_covid_estimate(:,1)-test_data_covid(:,3) )./(test_data_covid(:,3));
+ii = ( fr'.*test_data_covid_estimate(:,2)-test_data_covid(:,1) )./(test_data_covid(:,1));
+rr = ( test_data_covid_estimate(:,3)-test_data_covid(:,2) )./(test_data_covid(:,2));
+
+salida=fr'.*test_data_covid_estimate(:,2);
+ii_fr = ( fr'.*test_data_covid_estimate(:,2)-test_data_covid(:,1) )./(fr'.*test_data_covid_estimate(:,2));
+rr_fr = ( fr'.*test_data_covid_estimate(:,3)-test_data_covid(:,2) )./(fr'.*test_data_covid_estimate(:,3));
+
+sum_target = sum(test_data_covid(:,1));
+tmp_model = fr'.*test_data_covid_estimate(:,2);
+sum_model = sum(fr'.*test_data_covid_estimate(:,2));
+conteos_menores_cero = find(tmp_model<=0);
+conteos_menores_cero = size(conteos_menores_cero,1);
+
+tx_dt = [ ss ; ii_fr; ii ];
+
+%% data analysis
+target_y = test_data_covid;
+output_y = test_data_covid_estimate;
+tx_dt_g_target = [ target_y(:,1), target_y(:,2) , target_y(:,3)];
+tx_dt_g_output = [ output_y(:,1) , output_y(:,2), output_y(:,3)];
+s_pares = [tx_dt_g_target(:,1),tx_dt_g_output(:,1)];
+
+%% Estimations of the errors in the origin data
+% rmse_t=  sqrt(mse(tx_dt));
+% E=  mean(tx_dt); % global error
+Ess=  mean(abs(ss)); % susceptible error
+Eii=  mean(abs(ii)); % infected error
+Err = mean(abs(rr)); % recovered error
+Error_rr_fr=  mean(abs(rr_fr)); %  recovered real "model" error
+Error_ii_fr=  mean(abs(ii_fr)); % infected real "model" error
+
+%% cumulative waves case (post-proccesing data)
+if acumulada == 1 || acumulada == 0
+    Infac = fr.*diferenciasDiarias(test_data_covid_estimate(:,2)');
+    InfDar = diferenciasDiarias(InfDa'); % infected daily target
+    Infc = diferenciasDiarias(Inf); % infected daily solver
+    InfDa =InfDar;
+    Inf =Infc;
+    I_test = diferenciasDiarias(test_data_covid(:,1)');
+    R_test = diferenciasDiarias(test_data_covid(:,2)');
+    R_test_fit=diferenciasDiarias(test_data_covid_estimate(:,3)');
+    ii = ( Infac-I_test )./(I_test); % infected relative error (daily)   
+   rr = ( R_test_fit-R_test)./(R_test); %recovered relative error (daily) 
+    %Ess=  mean(abs(ss))
+    
+    I_test = diferenciasDiarias(test_data_covid(:,1)');
+    R_test = diferenciasDiarias(test_data_covid(:,2)');
+    U_test = diferenciasDiarias(test_data_covid(:,3)');
+    R_test_fit = InfR;
+    ii = ( Infac-I_test )./(I_test); % infected relative error (daily)   
+    rr = ( R_test_fit-R_test)./(R_test); %recovered relative error (daily) 
+    uu = ( UCIc-U_test)./(UCIDa); % icu relative error (daily) 
+    %Ess=  mean(abs(ss))
+    Eii=  mean(abs(ii));
+    Err = mean(abs(rr));
+    Euu=  mean(abs(uu));
+else %% daily waves case (acumulada == 2)
+    InfR = salida;
+    Infac = InfR;
+    InfDar =InfDa;
+    rr = ( test_data_covid_estimate(:,3)-test_data_covid(:,2) )./(test_data_covid(:,2));
+end
+
+figure
+%% Gráficos
+%% Para muchos datos graficarlos sólo cada 6 días
+I=find( mod(tg,2)==0 );
+% I=[1 I length(tc)];
+% I=find( mod(tc,2)==0 );
+% I=[1 I];
+%I=find(tc);
+texp=tg(I);
+clf
+plot(tg,InfR,'--k','LineWidth',1) % fr'.*y(2) <-- ajuste estimación usando el sigmoide I_MODEL
+hold on
+plot(tg,Inf,'r','LineWidth',0.5) %Infectados obtenidos con Framework --> y(2) I_SOLVER
+%% Fit the point (remember)
+plot(texp,InfDa(I),'sb','MarkerEdgeColor','b',...
+    'MarkerFaceColor',[0 0.4470 0.7410],'MarkerSize',2); %Infectados datos de origen I_DATA
+maxdata=max(InfDa);
+mindata=min(InfDa);
+%% For original data
+if use_synt ~= 3
+    %% Plot original data
+    plot(texp,InfDaor(I),'diamond','Color','g','MarkerSize',2);
+    maxdataor=max(InfDaor);
+    mindataor=min(InfDaor);
+    mindata=min(mindata,mindataor);
+    maxdata=max(maxdata,maxdataor);
+end
+maxInf=max(Inf);
+minInfR=min(InfR);
+maxInfR=max(InfR);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+xlabel('Time (days)')
+ylabel('Cases number')
+
+% lineas = [I00,I10];
+% limiteX = size(xd,1)-tg(end);
+% intervaloTmp = [tg(1)-lineas(1,1) tg(end)+limiteX]
+axis([tg(1) tg(end) 0.01*min(minInfR,mindata) 1.05*max(maxdata,maxInf)])
+
+
+% % Obtener el tamaño de la figura y calcular el número de ticks
+% ax = gca;
+% num_ticks = round(ax.Position(3) * 8); % Basado en el tamaño de los ejes
+% num_ticks = max(2, num_ticks); % Al menos 2 ticks
+% xTMP = [1,size(xd,1)]
+% axis([tg(1)-lineas(1,1) tg(end)+limiteX 0.01*min(minInfR,mindata) 1.05*max(maxdata,maxInf)])
+
+% xticks(xTMP);
+% xticklabels(arrayfun(@(v) sprintf('Valor %.0f', v), xTMP, 'UniformOutput', false)); 
+
+% Cambiar los límites del eje X
+%xlim(xTMP); % Mostrar solo el rango entre 20 y 80
+
+% Generar ticks adaptativos
+num_ticks = 5; % Número deseado de ticks
+ticks = linspace(1,tg(end), num_ticks); % Ticks adaptativos
+% 
+% % Cambiar los ticks y etiquetas
+xticks(ticks);
+xticklabels(arrayfun(@(v) sprintf('%.f', v), ticks+I00-1, 'UniformOutput', false));
+
+
+
+
+
+%title(titulo)
+if use_synt ~= 3
+    lgd=legend('$I$ fitted','$I$ actual','Synthetic','Original');
+else
+    lgd=legend('$I$ fitted','$I$ actual','Original'); 
+end
+set(lgd,'Location','northwest','Interpreter','latex','FontSize',10)
+% subplot(122)
+% plot(tg,UCI,'-.k','LineWidth',0.5)
+% hold on
+% plot(texp,UCIDa(I),'sb','MarkerEdgeColor','b',...
+%     'MarkerFaceColor',[0 0.4470 0.7410],'MarkerSize',2);
+% hold on
+% plot(texp,UCIDaor(I),'diamond','Color','g','MarkerSize',2);
+% %title(titulo)
+% maxdataor=max(UCIDaor);
+% mindataor=min(UCIDaor);
+% maxdata=max(max(UCIDa),maxdataor);
+% mindata=min(min(UCIDa),mindataor);
+% maxUCI=max(UCI);
+% minUCI=min(UCI);
+% axis([tg(1)-2 tg(end)+2 0.01*min(minUCI,mindata) 1.05*max(maxdata,maxUCI)])
+% lgd=legend('$U$ fitted','Synthetic','Original');
+% set(lgd,'Location','northwest','Interpreter','latex','FontSize',10)
+% % % Cambiar los ticks y etiquetas
+% xticks(ticks);
+% xlabel('Time (days)')
+% xticklabels(arrayfun(@(v) sprintf('%.f', v), ticks+I00-1, 'UniformOutput', false));
+
+shg
+
+

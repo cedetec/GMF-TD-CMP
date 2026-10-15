@@ -1,0 +1,171 @@
+tau1=p(4);
+tau2=p(5);
+tau3=p(6);
+tau4=p(7);
+tau5=p(8);
+tau6=p(9);
+all_taus = [tau1,tau2,tau3,tau4,tau5,tau6]';
+%load("solucionbuena_calibracion.mat") % on case of charge directy initial
+% data, for example to manual "p0"
+
+nTau=length(all_taus);
+tg=(1:max(size(Data)))';
+
+%%  config: solver EDP with time delays 
+v_ini = [N-(xd(diaInicio,1)+xd(diaInicio,2)+xd(diaInicio,3));Data(1,1);Data(1,2);Data(1,3)];
+
+vectorInicial = v_ini;
+
+options = ddeset('RelTol',1e-4,'AbsTol',1e-8,...
+                 'InitialY',vectorInicial,'InitialStep',10);
+
+vectorInicial = v_ini;
+
+tiempo_compute_dde23_0 = tic
+
+
+sol = dde23(@sir_ret_fun_vac_all, all_taus, @sir_ret_hist, [tg(1), tg(end)], options, p, N, x0); % ver. 30.07.2026
+y = deval(sol,tg);
+
+%tiempo_compute_dde23 = toc(tiempo_compute_dde23_0)
+
+
+%% solver solutions
+Inf = y(2,:); %LINEA ROJA - Infectados calculados por el modelo base...
+UCI = y(4,:); 
+f_tmp = 0;
+InfDa=Data(:,1);
+UCIDa=Data(:,3);
+
+if use_synt ~= 3
+    %% Original data
+    InfDaor=Dataor(:,1);
+    UCIDaor=Dataor(:,3);
+end
+
+Inf_t = Inf;
+UCI_t = UCI;
+InfDa_t=InfDa;
+UCIDa_t=UCIDa;
+
+fr=0;
+Inf_tmp=0;
+test_data_covid = Data;
+test_data_covid_estimate = y'; 
+
+% For adjustments on accumulated curves
+if acumulada == 1 || acumulada == 0
+    Inf_tmp = y(2,:);
+    Idays = diferenciasDiarias(Inf_tmp);
+    Idays_target = diferenciasDiarias(test_data_covid(:,1)');
+    fr=sigmoide_all(p,Inf_tmp,nTau); 
+    InfR = fr.*Idays;
+    f_tmp = cumsum(InfR);
+else % For adjustments on daily curves
+   Idays = y(2,:);
+    fr=sigmoide_all(p,Idays,nTau);
+end
+
+
+%% In case of evaluating fit to the data (default on evaluation results)
+ss = ( test_data_covid_estimate(:,1)-test_data_covid(:,4) )./(test_data_covid(:,4));
+ii = ( fr'.*test_data_covid_estimate(:,2)-test_data_covid(:,1) )./(test_data_covid(:,1));
+rr = ( test_data_covid_estimate(:,3)-test_data_covid(:,2) )./(test_data_covid(:,2));
+
+uu = ( test_data_covid_estimate(:,4)-test_data_covid(:,3) )./(test_data_covid(:,3));
+salida=fr'.*test_data_covid_estimate(:,2);
+ii_fr = ( fr'.*test_data_covid_estimate(:,2)-test_data_covid(:,1) )./(fr'.*test_data_covid_estimate(:,2));
+rr_fr = ( fr'.*test_data_covid_estimate(:,3)-test_data_covid(:,2) )./(fr'.*test_data_covid_estimate(:,3));
+
+sum_target = sum(test_data_covid(:,1));
+tmp_model = fr'.*test_data_covid_estimate(:,2);
+sum_model = sum(fr'.*test_data_covid_estimate(:,2));
+conteos_menores_cero = find(tmp_model<=0);
+conteos_menores_cero = size(conteos_menores_cero,1);
+
+
+%% data analysis
+target_y = test_data_covid;
+output_y = test_data_covid_estimate;
+tx_dt_g_target = [ target_y(:,4) , target_y(:,1), target_y(:,2) , target_y(:,3)];
+tx_dt_g_output = [ output_y(:,1) , output_y(:,2), output_y(:,3) , output_y(:,4)];
+s_pares = [tx_dt_g_target(:,1),tx_dt_g_output(:,1)];
+
+%% Estimations of the errors in the origin data
+% rmse_t=  sqrt(mse(tx_dt));
+% E=  mean(tx_dt); % global error
+Ess=  mean(abs(ss)); % susceptible error
+Eii=  mean(abs(ii)); % infected error
+Err = mean(abs(rr)); % recovered error
+Euu=  mean(abs(uu)); % icu error
+Error_rr_fr=  mean(abs(rr_fr)); %  recovered real "model" error
+Error_ii_fr=  mean(abs(ii_fr)); % infected real "model" error
+
+%% cumulative waves case (post-proccesing data)
+if acumulada == 1 || acumulada == 0
+    UCIc = diferenciasDiarias(UCI);
+    UCIr = diferenciasDiarias(UCIDa');
+    %Infac = diferenciasDiarias(InfR);fr.*
+    Infac = fr.*diferenciasDiarias(test_data_covid_estimate(:,2)');
+    InfDar = diferenciasDiarias(InfDa'); % infected daily target
+    Infc = diferenciasDiarias(Inf); % infected daily solver
+    UCI =UCIc;
+    UCIDa =UCIr; 
+    %InfR =Infac; %[Infac,Infac(1,end)];
+    InfDa =InfDar;
+    Inf =Infc;
+    I_test = diferenciasDiarias(test_data_covid(:,1)');
+    R_test = diferenciasDiarias(test_data_covid(:,2)');
+    U_test = diferenciasDiarias(test_data_covid(:,3)');
+    R_test_fit = InfR;
+    ii = ( Infac-I_test )./(I_test); % infected relative error (daily)   
+    rr = ( R_test_fit-R_test)./(R_test); %recovered relative error (daily) 
+    uu = ( UCIc-U_test)./(UCIDa); % icu relative error (daily) 
+    %Ess=  mean(abs(ss))
+    Eii=  mean(abs(ii));
+    Err = mean(abs(rr));
+    Euu=  mean(abs(uu));
+else %% daily waves case (acumulada == 2)
+    UCIc = UCI;
+    UCIr = UCIDa;
+    InfR = salida;
+    Infac = InfR;
+    InfDar =InfDa;
+    rr = ( test_data_covid_estimate(:,3)-test_data_covid(:,2) )./(test_data_covid(:,2));
+end
+%% Plot
+% 1. Definir un tamaño físico controlado para la ventana de la figura
+% Esto evita que al exportar a EPS el texto se desproporcione.
+fig = figure('Position', [100, 100, 600, 450]); 
+hold on;
+plot(tg,UCI,'-.k','LineWidth',1.5,'DisplayName','Modeled');
+hold on
+plot(texp,UCIDa(I),'sb','MarkerEdgeColor','b',...
+        'MarkerFaceColor',[0 0.4470 0.7410],'MarkerSize',3,'DisplayName','Observed');
+hold on
+maxdata=max(UCIDa);
+mindata=min(UCIDa);
+maxUCI=max(UCI);
+minUCI=min(UCI);
+xlabel('Time (days)','FontSize',16)
+ylabel('Cases incidence','FontSize',16)
+axis([tg(1)-2 tg(end)+2 0.01*min(minUCI,mindata) 1.05*max(maxdata,maxUCI)])
+ax=gca;
+% 3. Configurar la fuente GLOBAL de los ejes (Labels y números crecerán juntos)
+box on
+ax.FontSize= 16;
+drawnow
+pos = lgd.Position;
+pos(3) = pos(3) * 1.10; 
+lgd.Position = pos;
+
+% 6. Forzar el renderizado vectorial limpio (Painters)
+fig.Renderer = 'opengl';
+findobj(ax,'Type','line')    % lista handles de líneas
+% 6. Exportar a formato EPS de forma ajustada y recortada
+exportgraphics(fig, 'Fig1b.pdf', 'ContentType', 'vector','BackgroundColor','none');
+hold off
+legend
+shg
+
+
