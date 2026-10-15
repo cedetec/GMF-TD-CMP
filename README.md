@@ -55,7 +55,7 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-This study evaluates and compares the General Epidemiological Model (GEM) against two simplified COVID-19 epidemiological models, using a calibration approach based on the incidence curve and parametric bootstrapping. The results show that GEM outperforms the other models in both calibration and predictive capacity across waves, highlighting its ability to capture complex dynamics—such as vaccination and ICU hospitalisations — and provide a more comprehensive, reproducible epidemiological understanding.
+This study evaluates and compares the General Epidemiological Model (GEM) against two simplified COVID-19 epidemiological models, using a calibration approach based on the incidence curve and parametric bootstrapping. The results show that GEM outperforms the other models in both calibration and predictive capacity across waves, highlighting its ability to capture complex dynamics such as vaccination and ICU hospitalisations and provide a more comprehensive, reproducible epidemiological understanding.
 
 ### run 
 
