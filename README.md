@@ -8,8 +8,8 @@
     <img src="images/logouchile.png" alt="Logo" width="80" height="80">
   </a>
 
-  <h3 align="center"> Software: GMD-TS </h3>
-  <h3 align="center"> General Modeling Framework for Transmissible Diseases  </h3>
+  <h3 align="center"> Software: GMF-TD-CMP </h3>
+  <h3 align="center"> A ROBUST MODELING FRAMEWORK TO INVESTIGATE TRANSMISSIBLE DISEASES: A COMPARATIVE STUDY  </h3>
   <p align="center">
     Team: Oscar Rojas (U. Santiago de Chile), Patricio Cumsille (U. Bío-Bío), and Carlos Conca (U. de Chile)
     <br />
@@ -124,6 +124,7 @@ This work is an improved extension of the source code presented in [GSM-covid19C
   - Department of Mathematics and Computer Science, Faculty of Science, University of Santiago of Chile (O. Rojas).
   - Department of Mathematical Engineering (DIM) and Center for Mathematical Modeling (CMM), University of Chile (C. Conca).
   - Centre for Biotechnology and Bioengineering (CeBiB), University of Chile (C. Conca, P. Cumsille and O. Rojas).
+  - Center for Development, Experimentation and Transfer of Educational Technology (CEDETEC),  University of Santiago of Chile (O. Rojas) 
 
 PC contributed to conceptualization, formal analysis, investigation, methodology,  software.
 ORD contributed to conceptualization, formal analysis, investigation, methodology, software.
@@ -135,7 +136,7 @@ CC contributed to the supervision project.
 ## Acknowledgements
 Funding 
 
-The Centre for Biotechnology and Bioengineering (CeBiB), Grant Number ANID AFB240001, partially supported all authors. Finally, the ACE210010 and CMM PIA AFB170001 projects partially supported the third author.
+<!--  The Centre for Biotechnology and Bioengineering (CeBiB), Grant Number ANID AFB240001, partially supported all authors. Finally, the ACE210010 and CMM PIA AFB170001 projects partially supported the third author.
 <!-- 
 <a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</a>.
 
