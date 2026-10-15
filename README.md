@@ -1,4 +1,4 @@
-# GSM-TD
+# GMF-TD-CMP
  <!-- PROJECT LOGO -->
 <br />
 <p align="center">
