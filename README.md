@@ -2,7 +2,7 @@
  <!-- PROJECT LOGO -->
 <br />
 <p align="center">
-  <a href="https://github.com/neurovisionhub/GSM-covid19CL">
+  <a href="https://github.com/cedetec/GMF-TD-CMP">
     <img src="images/logobiobio.png" alt="Logo" width="80" height="80">
     <img src="images/logo_usach.png" alt="Logo" width="80" height="80">
     <img src="images/logouchile.png" alt="Logo" width="80" height="80">
@@ -13,10 +13,10 @@
   <p align="center">
     Team: Patricio Cumsille (U. Bío-Bío), Oscar Rojas (U. Santiago de Chile) and Carlos Conca (U. de Chile)
     <br />
-    <a href="https://github.com/neurovisionhub/GMF-TD"><strong>Explore the docs »</strong></a>
+    <a href="https://github.com/cedetec/GMF-TD-CMP"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/neurovisionhub/GMF-TD/blob/main/main.m">main</a>
+    <a href="https://github.com/cedetec/GMF-TD-CMP/blob/main/main.m">main</a>
   </p>
 </p>
 
