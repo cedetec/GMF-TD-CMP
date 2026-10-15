@@ -55,7 +55,7 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-This repository contains a set of computational techniques and numerical algorithms that allow obtaining epidemiological parameters from SIR models with constant time delays. The underlying method implemented is a general epidemiological model that allows for the evolution of epidemiological parameters, which is useful for public decision-making in the face of health emergencies and other applications derived from the simulation of epidemiological scenarios. COVID-19 data for the entire Chilean territory is used as a case study.
+This study evaluates and compares the General Epidemiological Model (GEM) against two simplified COVID-19 epidemiological models, using a calibration approach based on the incidence curve and parametric bootstrapping. The results show that GEM outperforms the other models in both calibration and predictive capacity across waves, highlighting its ability to capture complex dynamics—such as vaccination and ICU hospitalisations — and provide a more comprehensive, reproducible epidemiological understanding.
 
 ### run 
 
