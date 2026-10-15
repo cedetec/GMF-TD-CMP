@@ -1,0 +1,167 @@
+load('Orig_data.mat');
+opcionModel=1;
+%% Para no ejecutar el main antes (no funciona porque se cambia el valor de diaInicio)
+% cantidad=100;
+% acumulada=2;
+% percentPrunning = 1;
+% variante_sier = 1;
+% grafica_data=0; 
+% flagpause=0; % for pause on visualization
+% ventana_general=60;
+% ventana=ventana_general;
+% region = 'Metropolitana';
+% data_times_processing
+% tc=diaInicio:diaFinEstudio;
+% diaInicio=1; diaFinEstudio=350;
+% tc=diaInicio:diaFinEstudio;
+%
+%close all
+%load('data_xd_GEM_period1_260_rel6final.mat')
+% load("data_p_GEM_period1_260_rel4b.mat");
+% load("data_InfR_GEM_period1_260_rel4b.mat");
+% load("data_resnorm_GEM_period1_260_rel4b.mat");
+%cantidad=13;
+%pred=1;
+%calc=0;
+%er = data_resnorm;
+% nF=240;
+%nF=120;
+%nF=80
+%% CI computed with normality assumption (reasonable for the size)
+Pm=mean(data_p,2);
+Pstd=std(data_p,0,2);
+Plb=Pm-tinv(0.975,cantidad-1)*Pstd/sqrt(cantidad);
+Pub=Pm+tinv(0.975,cantidad-1)*Pstd/sqrt(cantidad);
+ all_blocks_params_model_analytics_hibridas
+if opcionModel==1
+    vectorInicial = [N-xdor(diaInicio,1)-xdor(diaInicio,2)-xdor(diaInicio,3);Dataor(1,1);Dataor(1,2);Dataor(1,3)];
+else
+    vectorInicial = [N-xdor(diaInicio,1)-xdor(diaInicio,2);Dataor(1,1);Dataor(1,2)];
+end
+% LB curve
+[tp,Iflb,Ulb] = computepred(tc,Plb,x0or,nF,acumulada,nTau,N,opcionModel,vectorInicial);
+% Mean curve
+[~,Ifm,Um] = computepred(tc,Pm,x0or,nF,acumulada,nTau,N,opcionModel,vectorInicial);
+% UB curve
+[~,Ifub,Uub] = computepred(tc,Pub,x0or,nF,acumulada,nTau,N,opcionModel,vectorInicial);
+%% Statistics calculation forecasting
+%Data
+IDa = xdor(tp,1)';
+IDa = diferenciasDiarias(IDa)';
+if opcionModel==1
+    UDa = xdor(tp,3)';
+    UDa = diferenciasDiarias(UDa)';
+end
+%ipred=(tc(end)+1:tc(end)+nF)';
+ipred=(length(tc)+1:length(tp))';
+MSEI  = mean( ( ( Ifm(ipred) - xdor(ipred,1) )./Ifm(ipred) ).^2 );
+MREI = mean(  abs( Ifm(ipred) - xdor(ipred,1) )./Ifm(ipred) );
+
+if opcionModel==1
+    MSEU = mean( ( ( Um(ipred) - xdor(ipred,3) )./Um(ipred) ).^2 );
+    MREU = mean( abs( Um(ipred) - xdor(ipred,3) )./Um(ipred) );
+end
+%% Mean Interval Score (MIS)
+MISI = mean( abs(Ifub(ipred)-Iflb(ipred)) ...
+           + (2/0.05)*( min(Iflb(ipred),Ifub(ipred))-IDa(ipred) ).*( IDa(ipred) < min(Iflb(ipred),Ifub(ipred)) )...
+           + (2/0.05)*( IDa(ipred)-max(Iflb(ipred),Ifub(ipred)) ).*( IDa(ipred) > max(Iflb(ipred),Ifub(ipred)) ) );
+% Coverage or the 95% prediction interval
+cPI=round( 100*length( find(  ( IDa(ipred) >= min(Iflb(ipred),Ifub(ipred)) )  & ( IDa(ipred) <= max(Iflb(ipred),Ifub(ipred)) )  )  )/length(ipred), 2);
+if opcionModel==1
+    MISU = mean( abs(Uub(ipred)-Ulb(ipred)) ...
+                 + (2/0.05)*( min(Ulb(ipred),Uub(ipred))-UDa(ipred) ).*( UDa(ipred) < min(Ulb(ipred),Uub(ipred)) )...
+                 + (2/0.05)*( UDa(ipred)-max(Ulb(ipred),Uub(ipred)) ).*( UDa(ipred) > max(Ulb(ipred),Uub(ipred)) ) );
+    cPU=round( 100*length( find( ( UDa(ipred) >= min(Ulb(ipred),Uub(ipred)) ) & ( UDa(ipred) <= max(Ulb(ipred),Uub(ipred)) )  )  )/length(ipred), 2);
+end
+%% Beginning of calculation for ploting
+%% Shaded prediction interval
+%ipred=(tc(end):tc(end)+nF)';
+ipred=(length(tc):length(tp))';
+Ulb_ip=Ulb(ipred);
+Um_ip  = Um(ipred);
+Uub_ip = Uub(ipred);
+Ulb_ip = Ulb_ip(:);
+Um_ip  = Um_ip(:);
+Uub_ip = Uub_ip(:);
+ipred   = ipred(:);
+X = [ipred; flipud(ipred)];
+Y1 = [Ulb_ip; flipud(Um_ip)];   % inferior -> media
+Y2 = [Um_ip;  flipud(Uub_ip)];  % media -> superior
+%% Definitions for good exportation into pdf files
+% 1. Definir un tamaño físico controlado para la ventana de la figura
+% Esto evita que al exportar a EPS el texto se desproporcione.
+fig = figure('Position', [50, 50, 900, 550]); 
+%fig=figure;
+hold on;
+
+% 2. Crear tu gráfico usando 'tiledlayout' (herramienta nativa moderna)
+% Aquí es donde se aplica el "TileSpacing" de forma correcta.
+%t = tiledlayout(1, 1, 'TileSpacing', 'compact', 'Padding', 'compact');
+%ax = nexttile;
+
+%% I Plot 
+h1=fill(X, Y1, [0.502,0.749,1], 'EdgeColor','none', 'FaceAlpha',0.35);
+fill(X, Y2, [0.502,0.749,1], 'EdgeColor','none', 'FaceAlpha',0.35);
+
+h2=plot(tp, Um, 'b', 'LineWidth', 2);
+h3=plot(tp, Ulb, '--g', 'LineWidth', 1.5);
+h4=plot(tp, Uub, '-.k', 'LineWidth', 1.5);
+
+%set(gca,'Layer','top') 
+% Original data
+ii=find( mod(tp,4)==0 );
+ii=[1; ii; length(tp)];
+texp = tp(ii);
+h5=plot(texp,UDa(ii),'ro','LineWidth',1.5,'MarkerSize',2);
+%
+ical=(1:length(tc))';
+maxInf=max(Uub(ical));
+maxInf=max( maxInf, max(Ulb(ical)) );
+minInf=min(Ulb(ical));
+minInf=min(minInf,min(Uub(ical)));
+minInf=min(minInf,min(Um(ical)));
+mindata=min(diferenciasDiarias(xdor(tp,3)'));
+maxdata=max(diferenciasDiarias(xdor(tp,3)'));
+% h6=line([tc(end), tc(end)], [0.01*min(minInf,mindata) 1.05*max(maxdata,maxInf)],...
+%     'LineStyle',':','LineWidth',1,'Color','black');
+h6=line([tc(end), tc(end)], [min(minInf,mindata) 1.01*max(maxdata,maxInf)],...
+    'LineStyle',':','LineWidth',1,'Color','black');
+xlabel('Time (days)','FontSize',14)
+ylabel('Cases incidence','FontSize',14)
+% axis([tp(1)-2 tp(end)+2 0.01*min(minInf,mindata) 1.01*max(maxdata,maxInf)]);
+axis([tp(1)-2 tp(end)+2 min(minInf,mindata) 1.01*max(maxdata,maxInf)]);
+box on
+ax=gca;
+ax.FontSize=16;
+%h = [h1 h2 h3 h4 h5 h6 h7];      % incluir sólo los handles que quieres en leyenda
+%h = h(isgraphics(h));            % filtrar inválidos
+%lgd = legend(ax, 'Location','northwest');
+lgd = legend([h1 h2 h3 h4 h5 h6], {'Pred. band','Mean curve','LB curve','UB curve','Data','End of calibration'},'Location','north');
+%set(lgd,'Location','northwest','FontSize',12);
+
+%lgd.AutoUpdate = 'off';
+% lgd.AutoUpdate = 'off';
+
+% 3. Configurar la fuente GLOBAL de los ejes (Labels y números crecerán juntos)
+set(ax, 'FontSize', 16);
+
+% 4. Insertar la leyenda de forma externa pero vinculada al Layout
+%lgd = legend(ax, 'Seno de X', 'Location', 'eastoutside');
+%set(lgd,'Location','northwest','Interpreter','latex','FontSize',12)
+%lgd.String = strcat(lgd.String, '    '); 
+%lgd.String = strcat(lgd.String, '\;\;\;'); 
+%drawnow;
+
+% 5. Truco para estirar la caja vectorialmente si el texto sigue al límite
+% (Multiplica el ancho actual por un 10% adicional de seguridad)
+pos = lgd.Position;
+pos(3) = pos(3) * 1.10; 
+lgd.Position = pos;
+
+% % 6. Forzar el renderizado vectorial limpio (Painters)
+fig.Renderer = 'opengl';
+findobj(gcf,'Type','line')    % lista handles de líneas
+% % 6. Exportar a formato EPS de forma ajustada y recortada
+exportgraphics(fig, 'FigU6a_nF120.pdf', 'ContentType', 'vector','BackgroundColor','none');
+hold off
+shg

@@ -1,0 +1,93 @@
+%% R effective computation for GSIRM (model 2022, opcionModel=2)
+function [R,Rf,Rd] = Re1_sin_vac(p,N,x0,rng,nTau,nGammas,xd,Data,acumulada,ventana)
+%% Optimized parameters values
+tau1=p(4);
+tau2=p(5);
+tau3=p(6);
+tau4=p(7);
+tau5=p(8);
+tau6=p(9);
+all_taus = [tau1,tau2,tau3,tau4,tau5,tau6]';
+%% Vectors of Optimized params values
+posIni = 4;
+all_gammas  = p(posIni+nTau:posIni+nTau+nGammas-1);
+%% Evaluation of time delay for passing of infected to icu
+tg=rng;
+if tau2<round(tau2)
+    I2=find(tg>tau2+1);
+else
+    I2=find(tg>tau2);
+end
+tg=[tg(I2(1))-1; tg(I2); tg(I2(end))+1];
+diaInicio=tg(1);%% Restar xd al "N"
+%% Corregir error en Data
+v_ini = [N-(xd(diaInicio,1)+xd(diaInicio,2));
+        Data(diaInicio,1);Data(diaInicio,2)];
+vectorInicial = v_ini;
+options = ddeset('RelTol',1e-4,'AbsTol',1e-8,...
+                 'InitialY',vectorInicial,'InitialStep',10);
+sol=dde23(@sir_ret_fun_sin_vac,all_taus,@sir_ret_hist_sin_vac,[tg(1),tg(end)],options,p,N,x0);
+y=deval(sol,tg);
+a=p(1);
+k=p(2);
+aC=p(3);
+alfa=1-(1-a)./( 1+exp( -k*(y(2,:)-aC) ) );
+if acumulada==1
+    Idayf = diferenciasDiarias(alfa.*y(2,:)); %Iday fitted
+    Iday =  diferenciasDiarias(y(2,:));
+else
+    Idayf=alfa.*y(2,:);
+    Iday=y(2,:);
+end
+%% Segundo orden centrada
+Index=2:length(Iday)-1; % (es la mejor aprox.)
+Ipf= ( Idayf(Index+1) - Idayf(Index-1) )/2;
+%Ipf= alfa(Index).*( Iday(Index+1) - Iday(Index-1) )/2;
+
+Ip = ( Iday(Index+1) - Iday(Index-1) )/2;
+tg=rng(I2);
+tgamma = linspace(min(tg),max(tg),numel(all_gammas));
+gamma  = interp1(tgamma,all_gammas,tg,'pchip');
+tr=tg-round(tau2);
+diaInicio=tr(1);
+% tc=rng(I5c);
+% tc=tc+round(tau5)-round(tau2);
+% ini=tg(1)-tc(1)+1;
+v_ini = [N-(xd(diaInicio,1)+xd(diaInicio,2));
+    Data(diaInicio,1);Data(diaInicio,2)];
+vectorInicial = v_ini;
+options = ddeset('RelTol',1e-4,'AbsTol',1e-8,...
+                 'InitialY',vectorInicial,'InitialStep',10);
+sol=dde23(@sir_ret_fun_sin_vac,all_taus,@sir_ret_hist_sin_vac,[tr(1),tr(end)],options,p,N,x0);
+yr=deval(sol,tr);
+a=p(1);
+k=p(2);
+aC=p(3);
+alfa=1-(1-a)./( 1+exp( -k*(yr(2,:)-aC) ) );
+if acumulada==1
+    Irf=diferenciasDiarias(alfa.*yr(2,:));
+    Ir=diferenciasDiarias(yr(2,:));
+else
+    Irf=alfa.*yr(2,:);
+    Ir=yr(2,:);
+end
+R  = Ip'./( gamma.*Ir' )+1;
+Rf = Ipf'./( gamma.*Irf' )+1;
+R = movmean(R,ventana);
+Rf = movmean(Rf,ventana);
+%% Calculo de "Red" (R efectivo en base a los datos)
+tg=rng;
+if tau2<round(tau2)
+    I2=find(tg>tau2+1);
+else
+    I2=find(tg>tau2);
+end
+tg=[tg(I2(1))-1; tg(I2); tg(I2(end))+1];
+I=xd(tg,1);
+Index=(2:length(I)-1)';
+Ip = ( I(Index+1) - I(Index-1) )/2;
+tg=rng(I2);
+tr=tg-round(tau2);
+Ir=xd(tr,1);
+Rd = 1 + Ip./( Ir/round(tau2) );
+Rd=movmean(Rd,ventana);

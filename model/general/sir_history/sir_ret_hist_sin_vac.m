@@ -1,0 +1,10 @@
+%% History function for computing the solution of GSIRTD (2022 model, opcionModel = 2)
+function v=sir_ret_hist_sin_vac(t,p,N,x0)
+size_t=size(x0,1);
+tramo =1:size_t;
+vi = interp1(tramo,x0(:,2),t,'pchip');
+vr = interp1(tramo,x0(:,3),t,'pchip');
+v=zeros(3,1);
+v(2)=vi;
+v(3)=vr;
+v(1)=N-(vi+vr);
