@@ -75,7 +75,7 @@ matlab 2014 or higher
 
 1. Clone the repo
    ```sh
-   git clone https://github.com/neurovisionhub/GMF-TD.git
+   git clone https://github.com/cedetec/GMF-TD-CMP.git
    ```
 2. cd directory
    ```sh 
